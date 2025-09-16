@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>浚渫シミュレーター</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* Prevent scrolling */
+      }
+
+      #unity-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #unity-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #231F20;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+      <div id="unity-loading-bar">
+        <div id="logo-container">
+          <img id="logo" src="TemplateData/company_name_blue.jpg" alt="Company Logo">
+          <img id="logo" src="TemplateData/triarrow-logo-2024.png" alt="Tri-Arrow Logo">
+        </div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full">
+            <img id="boat-icon" src="TemplateData/icon_loading_wakachiku.png" alt="Boat Icon">
+          </div>
+        </div>
+        <p id="loading-text">Now Loading...</p>
+      </div>
+      <div id="unity-warning"></div>
+    </div>
+    <div id="start-overlay" style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      z-index: 9999;
+      cursor: pointer;">
+      Click to Start
+    </div>
+    <script>
+      const overlay = document.getElementById("start-overlay");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      async function enterFullscreen() {
+        try {
+          const element = document.documentElement;
+          if (element.requestFullscreen) {
+            await element.requestFullscreen();
+          } else if (element.webkitRequestFullscreen) {
+            await element.webkitRequestFullscreen();
+          } else if (element.mozRequestFullScreen) {
+            await element.mozRequestFullScreen();
+          } else if (element.msRequestFullscreen) {
+            await element.msRequestFullscreen();
+          }
+          await screen.orientation.lock("landscape-primary");
+        } catch (err) {
+          console.warn("Fullscreen or orientation lock failed:", err);
+        }
+      }
+
+      if (isMobile) {
+        overlay.style.display = "flex";
+        overlay.addEventListener("click", async () => {
+          await enterFullscreen();
+          overlay.style.display = "none";
+        });
+
+        document.addEventListener("fullscreenchange", () => {
+          if (!document.fullscreenElement) {
+            overlay.style.display = "flex";
+          }
+        });
+      }
+
+      window.addEventListener("load", function () {
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("ServiceWorker.js");
+        }
+
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingBar = document.querySelector("#unity-loading-bar");
+        var progressBarFull = document.querySelector("#unity-progress-bar-full");
+        var warningBanner = document.querySelector("#unity-warning");
+
+        function unityShowBanner(msg, type) {
+          function updateBannerVisibility() {
+            warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+          }
+          var div = document.createElement('div');
+          div.innerHTML = msg;
+          warningBanner.appendChild(div);
+          if (type == 'error') div.style = 'background: red; padding: 10px;';
+          else {
+            if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+            setTimeout(function() {
+              warningBanner.removeChild(div);
+              updateBannerVisibility();
+            }, 5000);
+          }
+          updateBannerVisibility();
+        }
+
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/UnityBuildVR.loader.js";
+        var config = {
+          arguments: [],
+          dataUrl: buildUrl + "/UnityBuildVR.data.br",
+          frameworkUrl: buildUrl + "/UnityBuildVR.framework.js.br",
+          codeUrl: buildUrl + "/UnityBuildVR.wasm.br",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "tac",
+          productName: "wakachiku",
+          productVersion: "0.1",
+          showBanner: unityShowBanner,
+        };
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          var meta = document.createElement('meta');
+          meta.name = 'viewport';
+          meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+          document.getElementsByTagName('head')[0].appendChild(meta);
+        }
+
+        loadingBar.style.display = "block";
+
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+          createUnityInstance(canvas, config, (progress) => {
+            const maxProgressWidth = 100 * progress;
+            progressBarFull.style.width = maxProgressWidth + "%";
+            const boatPosition = Math.min(80, Math.max(20, 100 * progress - 20));
+            document.getElementById("boat-icon").style.left = boatPosition + "%";
+          }).then((unityInstance) => {
+            loadingBar.style.display = "none";
+          }).catch((message) => {
+            alert(message);
+          });
+        };
+        document.body.appendChild(script);
+      });
+    </script>
+  </body>
+</html>
