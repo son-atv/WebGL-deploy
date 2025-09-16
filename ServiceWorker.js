@@ -1,9 +1,9 @@
 const cacheName = "tac-wakachiku-0.1";
 const contentToCache = [
-    "Build/UnityBuildVR.loader.js",
-    "Build/UnityBuildVR.framework.js.br",
-    "Build/UnityBuildVR.data.br",
-    "Build/UnityBuildVR.wasm.br",
+    "Build/WebGL-deploy.loader.js",
+    "Build/WebGL-deploy.framework.js",
+    "Build/WebGL-deploy.data",
+    "Build/WebGL-deploy.wasm",
     "TemplateData/style.css"
 
 ];
